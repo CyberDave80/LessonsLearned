@@ -18,9 +18,9 @@ Launch three containers in privileged mode so Docker can run inside them.
 ## 3. Test Connectivity (Optional)
 Verify that the nodes can reach each other.
 
-`docker exec -it node1 sh`
+`docker exec -it node1 sh`  
 
-# If ping is missing: 
+*If ping is missing:*  
 `apk add --no-cache iputils`  
 `ping node2`  
 `ping node3`  
