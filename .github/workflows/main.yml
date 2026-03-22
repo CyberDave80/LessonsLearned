@@ -1,0 +1,29 @@
+name: Format Docs
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  prettier:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Prettier
+        uses: creyD/prettier_action@v4.3
+        with:
+          prettier_options: --write **/*.md
+
+      - name: Commit changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        
+      - name: Check template
+        run: |
+          for file in $(find . -name "*.md"); do
+            grep -q "## Summary" "$file" || (echo "$file missing Summary" && exit 1)
+          done
+
+
+          
