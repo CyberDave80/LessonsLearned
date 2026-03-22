@@ -9,46 +9,46 @@ on:
       - '**/*.md'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  format-and-validate-incremental:
+  incremental-format:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout repo with fetch-depth 2 for git diff operations
+      # 1. Checkout the repo (full history not required for incremental)
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
 
-      # 2. Get list of changed Markdown files
+      # 2. Cache npm modules for Prettier
+      - name: Cache npm
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-prettier
+          restore-keys: |
+            ${{ runner.os }}-prettier
+
+      # 3. Find changed/new Markdown files
       - name: Get changed Markdown files
         id: changed_files
         run: |
-          echo "Checking changed markdown files..."
-          # Get files changed between last two commits on push, or PR base and head
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            git fetch origin ${{ github.event.pull_request.base.ref }} --depth=1
-            FILES=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD -- '*.md')
-          else
-            FILES=$(git diff --name-only HEAD~1 HEAD -- '*.md')
-          fi
-          echo "changed_files<<EOF" >> $GITHUB_OUTPUT
-          echo "$FILES" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          git fetch origin main --depth=1
+          git diff --name-only origin/main...HEAD -- '*.md' > changed_md.txt
+          cat changed_md.txt
+          echo "::set-output name=changed_files::$(cat changed_md.txt)"
 
-      # 3. Exit early if no changed files
-      - name: Check for changed files
-        if: steps.changed_files.outputs.changed_files == ''
+      # 4. Add missing required sections safely
+      - name: Add missing sections
         run: |
-          echo "No Markdown files changed. Skipping."
-          exit 0
-
-      # 4. Ensure required sections in changed files
-      - name: Add missing required sections
-        run: |
-          for file in ${{ steps.changed_files.outputs.changed_files }}; do
+          echo "${{ steps.changed_files.outputs.changed_files }}" | while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            if [ ! -f "$file" ]; then
+              echo "Skipping missing file '$file'"
+              continue
+            fi
             echo "Processing '$file'..."
             tmpfile=$(mktemp)
             added=false
@@ -64,33 +64,23 @@ jobs:
             fi
           done
 
-      # 5. Run Prettier only on changed files, passing explicit file names
-      - name: Prettier on changed files
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-      - name: Install Prettier
-        run: npm install -g prettier@3.8.1
+      # 5. Prettify changed files
       - name: Prettify changed files
         run: |
-          for file in ${{ steps.changed_files.outputs.changed_files }}; do
-            echo "Prettifying $file"
-            prettier --write "$file"
+          echo "${{ steps.changed_files.outputs.changed_files }}" | while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            if [ ! -f "$file" ]; then
+              echo "Skipping missing file '$file'"
+              continue
+            fi
+            echo "Prettifying '$file'"
+            npx prettier --write "$file"
           done
 
-      # 6. Configure git user for commit
-      - name: Configure git user
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      # 7. Commit changes if any
+      # 6. Commit changes if any
       - name: Commit changes
-        run: |
-          git add ${{ steps.changed_files.outputs.changed_files }}
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-            exit 0
-          fi
-          git commit -m "Auto-format and add missing sections to changed Markdown files"
-          git push origin HEAD:${{ github.ref_name }}
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Incremental: Add missing sections & Prettify Markdown"
+          branch: auto-format/${{ github.run_id }}
+          file_pattern: '**/*.md'
