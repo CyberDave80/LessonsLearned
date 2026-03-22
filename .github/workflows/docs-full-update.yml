@@ -62,4 +62,5 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Auto-format and add missing sections to Markdown docs"
+          branch: auto-format/${{ github.run_id }}
           file_pattern: '**/*.md'
