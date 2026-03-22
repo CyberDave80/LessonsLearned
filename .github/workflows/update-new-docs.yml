@@ -20,11 +20,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout the repo (full history needed for git diff)
+      # 1. Checkout the repo
+      #    For pull_request events, check out the PR head commit (not the merge
+      #    commit) so we can push formatting fixes back to the contributor's branch.
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       # 2. Install Prettier (pinned to major version 3 for deterministic behaviour)
       - name: Install Prettier
@@ -78,8 +81,31 @@ jobs:
             echo "No changed Markdown files to prettify."
           fi
 
-      # 6. Create or update a pull request with any formatting changes
+      # 6. Configure git user for commit operations
+      - name: Configure git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      # 7a. On pull_request: push formatting fixes directly to the PR head branch.
+      #     This avoids needing "Allow GitHub Actions to create pull requests" permission
+      #     and keeps the PR author's branch up to date automatically.
+      #     continue-on-error so fork PRs (where we can't push) don't fail the check.
+      - name: Push formatting fixes to PR branch
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: |
+          git add -A
+          if git diff --staged --quiet; then
+            echo "No formatting changes needed."
+          else
+            git commit -m "docs: incremental auto-format and add missing required sections"
+            git push origin HEAD:${{ github.head_ref }}
+          fi
+
+      # 7b. On push to main: create or update a pull request with any formatting changes.
       - name: Create or update pull request
+        if: github.event_name == 'push'
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}

@@ -40,6 +40,7 @@ for file in "$@"; do
 
   if $needs_summary || $needs_learned || $needs_commands; then
     tmpfile=$(mktemp) || { echo "  ✗ Failed to create temp file for: $file" >&2; continue; }
+    trap 'rm -f "$tmpfile"' EXIT
     $needs_summary  && printf "## Summary\n\n"        >> "$tmpfile"
     $needs_learned  && printf "## What I Learned\n\n" >> "$tmpfile"
     $needs_commands && printf "## Commands\n\n"        >> "$tmpfile"
