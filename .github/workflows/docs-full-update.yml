@@ -54,7 +54,7 @@ jobs:
       - name: Prettier Action
         uses: creyD/prettier_action@v4.6
         with:
-          prettier_options: --write "**/*.md"
+          prettier_options: --write **/*.md
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       # 5. Commit any changes made (sections added or formatting)
