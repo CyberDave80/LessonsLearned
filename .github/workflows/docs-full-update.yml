@@ -43,7 +43,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "docs: auto-format and add missing required sections"
-          branch: auto-format
+          branch: auto-format/${{ github.run_id }}
           base: main
           title: "Docs: Auto-format and add missing required sections"
           body: |
