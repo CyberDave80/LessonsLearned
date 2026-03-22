@@ -1,43 +1,38 @@
-name: Docs Full Repo Update
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+name: Docs Style Enforcement (Full Repo)
 
 on:
-  workflow_dispatch:  # manual trigger
+  workflow_dispatch:   # Run manually
+  push:
+    branches: [ main ]
+  pull_request:
 
 permissions:
   contents: write
 
 jobs:
-  update-all-docs:
+  format-and-validate:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout full repo
-      - uses: actions/checkout@v4
+      # 1. Checkout the repo (full history for git operations)
+      - name: Checkout repo
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # needed for git history
 
-      # 2. Cache node_modules
-      - name: Cache node modules
+      # 2. Cache npm modules to speed up Prettier installs
+      - name: Cache npm
         uses: actions/cache@v3
         with:
-          path: node_modules
-          key: ${{ runner.os }}-prettier-${{ hashFiles('package-lock.json') }}
+          path: ~/.npm
+          key: ${{ runner.os }}-prettier
           restore-keys: |
-            ${{ runner.os }}-prettier-
+            ${{ runner.os }}-prettier
 
-      # 3. Get all Markdown files
-      - name: Find all Markdown files
-        id: all-md
-        run: |
-          find . -name "*.md" > all_md.txt
-          files=$(cat all_md.txt | tr '\n' ' ')
-          echo "files=$files" >> $GITHUB_OUTPUT
-
+      # 3. Add missing sections to all Markdown files
       - name: Ensure required sections
         run: |
+          find . -name "*.md" > all_md.txt
           while IFS= read -r file; do
             echo "Processing '$file'..."
             tmpfile=$(mktemp)
@@ -55,17 +50,18 @@ jobs:
             fi
           done < all_md.txt
 
-      # 5. Prettify all Markdown files
+      # 4. Run Prettier on all Markdown files
       - name: Prettier Action
         uses: creyD/prettier_action@v4.6
         with:
-          prettier_options: --write "**/*.md"
-          clean_node_folder: false
-          no_commit: true
+          prettier_options: --write '**/*.md'
+          only_changed: false
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
-      # 6. Commit any changes
-      - name: Commit Auto-Formatted Markdown
+      # 5. Commit any changes made (sections added or formatting)
+      - name: Commit formatting changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Full repo update: add missing sections + format Markdown"
-          file_pattern: ${{ steps.all-md.outputs.files }}
+          commit_message: "Auto-format and add missing sections to Markdown docs"
+          branch: main
+          file_pattern: '**/*.md'
