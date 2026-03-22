@@ -1,4 +1,7 @@
-name: Docs Style Enforcement
+name: Docs Auto-Format & Template Enforcement
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  # Use Node.js 24 for GitHub Actions
 
 on:
   push:
@@ -13,12 +16,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout full history
+      # 1. Checkout full repo history
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # required for HEAD~1
+          fetch-depth: 0   # needed for git diff
 
-      # 2. Cache node_modules to speed up Prettier installs
+      # 2. Cache node_modules for Prettier
       - name: Cache node modules
         uses: actions/cache@v3
         with:
@@ -27,23 +30,32 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-prettier-
 
-      # 3. Auto-insert missing Markdown sections
-      - name: Ensure required sections
+      # 3. Get Markdown files changed in this commit/PR
+      - name: Get changed Markdown files
+        id: changed-files
         run: |
-          for file in $(find . -name "*.md"); do
+          files=$(git diff --name-only HEAD~1 HEAD | grep '\.md$' || true)
+          echo "files=$files" >> $GITHUB_OUTPUT
+
+      # 4. Skip workflow if no Markdown files changed
+      - name: Skip if no Markdown changes
+        if: steps.changed-files.outputs.files == ''
+        run: echo "No Markdown files changed, skipping workflow."
+
+      # 5. Ensure required sections exist, prepend if missing
+      - name: Ensure required sections
+        if: steps.changed-files.outputs.files != ''
+        run: |
+          for file in ${{ steps.changed-files.outputs.files }}; do
             echo "Processing $file..."
-            # Create a temp file
             tmpfile=$(mktemp)
             added=false
-            # Insert ## Summary if missing
+            # Prepend missing sections at the top
             grep -q "^## Summary" "$file" || { echo -e "## Summary\n\n" >> "$tmpfile"; added=true; }
-            # Insert ## What I Learned if missing
             grep -q "^## What I Learned" "$file" || { echo -e "## What I Learned\n\n" >> "$tmpfile"; added=true; }
-            # Insert ## Commands if missing
             grep -q "^## Commands" "$file" || { echo -e "## Commands\n\n" >> "$tmpfile"; added=true; }
-            # Append original content
+            # Append original file content
             cat "$file" >> "$tmpfile"
-            # Replace original file if we added anything
             if [ "$added" = true ]; then
               mv "$tmpfile" "$file"
               echo "Added missing sections to $file"
@@ -52,18 +64,19 @@ jobs:
             fi
           done
 
-      # 4. Run Prettier to auto-format Markdown
+      # 6. Prettify changed Markdown files
       - name: Prettier Action
+        if: steps.changed-files.outputs.files != ''
         uses: creyD/prettier_action@v4.6
         with:
-          prettier_options: --write **/*.md
-          only_changed: true
+          prettier_options: --write ${{ steps.changed-files.outputs.files }}
           clean_node_folder: false
           no_commit: true
 
-      # 5. Commit formatting changes (if any)
-      - name: Auto-commit Prettier fixes
+      # 7. Commit changes if any
+      - name: Commit Auto-Formatted Markdown
+        if: steps.changed-files.outputs.files != ''
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Auto-format Markdown docs"
-          file_pattern: '**/*.md'
+          commit_message: "Auto-format and enforce Markdown template"
+          file_pattern: ${{ steps.changed-files.outputs.files }}
