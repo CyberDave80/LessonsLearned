@@ -1,7 +1,9 @@
 ## Summary
+
 This guide outlines the creation of a multi-node, Highly Available (HA) K3s cluster running locally within Docker containers. It utilizes k3d for cluster provisioning and Rancher for centralized Kubernetes management, including automated certificate handling via cert-manager.
 
 ## What I Learned
+
 1. HA Architecture: Configuring a cluster with 3 control-plane nodes (servers) and 2 worker nodes (agents) for local high availability.
 
 2. Containerized K8s: Using k3d to simulate real-world nodes within Docker.
