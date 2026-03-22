@@ -15,26 +15,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Checkout the repo (full history for git operations)
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      # 2. Install Prettier (pinned to major version 3 for deterministic behaviour)
       - name: Install Prettier
         run: npm install --global prettier@3
 
+      # 3. Add missing required sections to all Markdown files (excluding .github/)
       - name: Ensure required sections in all Markdown files
         run: |
           find . -name "*.md" -not -path "./.github/*" -print0 \
             | xargs -0r bash scripts/enforce-doc-format.sh
 
-      - name: Run Prettier on all Markdown files
+      # 4a. On PRs: CHECK formatting (fail if changes would be made)
+      - name: Run Prettier (check) on pull requests
+        if: github.event_name == 'pull_request'
+        run: |
+          find . -name "*.md" -not -path "./.github/*" -print0 \
+            | xargs -0r prettier --check
+
+      # 4b. On push/manual: WRITE formatting (so the next step can open a formatting PR)
+      - name: Run Prettier (write) on push/manual
+        if: github.event_name != 'pull_request'
         run: |
           find . -name "*.md" -not -path "./.github/*" -print0 \
             | xargs -0r prettier --write
 
+      # 5. Create or update a pull request with any formatting changes (push/manual only)
       - name: Create or update pull request
-        if: github.event_name != 'pull_request'
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -47,4 +60,4 @@ jobs:
             - Add missing required sections (`## Summary`, `## What I Learned`, `## Commands`) to Markdown documents
             - Apply Prettier formatting to all Markdown files
 
-            Triggered by a push to `main` or a pull request.
+            Triggered by a push to `main` or manual dispatch.
