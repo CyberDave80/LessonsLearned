@@ -54,8 +54,7 @@ jobs:
       - name: Prettier Action
         uses: creyD/prettier_action@v4.6
         with:
-          prettier_options: --write '**/*.md'
-          only_changed: false
+          prettier_options: --write "**/*.md"
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       # 5. Commit any changes made (sections added or formatting)
@@ -63,5 +62,4 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Auto-format and add missing sections to Markdown docs"
-          branch: main
           file_pattern: '**/*.md'
