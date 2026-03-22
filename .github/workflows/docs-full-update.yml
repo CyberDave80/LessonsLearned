@@ -54,13 +54,31 @@ jobs:
       - name: Prettier Action
         uses: creyD/prettier_action@v4.6
         with:
-          prettier_options: --write **/*.md
+          prettier_options: --write '**/*.md'
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
-      # 5. Commit any changes made (sections added or formatting)
+      # 5. Configure git user for commit
+      - name: Configure git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      # 6. Commit formatting changes
       - name: Commit formatting changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Auto-format and add missing sections to Markdown docs"
-          branch: auto-format/${{ github.run_id }}
-          file_pattern: '**/*.md'
+          branch: auto-format
+          file_pattern: **/*.md
+
+      # 7. Create or update pull request
+      - name: Create or update pull request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Auto-format and add missing sections to Markdown docs"
+          branch: auto-format
+          base: main
+          title: "Docs: Auto-format and add missing sections"
+          body: |
+            This pull request adds missing required sections to Markdown documents and applies Prettier formatting automatically.
