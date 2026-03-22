@@ -15,6 +15,8 @@ jobs:
     steps:
       # 1. Checkout the repo
       - uses: actions/checkout@v4
+        with:
+          fetch-dept: 0
 
       # 2. Run Prettier to auto-format Markdown
       - name: Prettier Action
