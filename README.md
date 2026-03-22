@@ -9,7 +9,9 @@ This repository contains lessons learned from cloud-native experiments, Kubernet
 - A section on what I learned.
 
 ## Commands
+
 **Example**
+
 - `k3d cluster create ...` — create local K3s cluster
 - `kubectl get nodes` — check node status
 - `helm install ...` — install Helm charts
