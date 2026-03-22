@@ -1,13 +1,13 @@
 name: Docs Style Enforcement (Full Repo)
 
 on:
-  workflow_dispatch:   # Run manually
+  workflow_dispatch: # Run manually
   push:
-    branches: [ main ]
-  pull_request:
+    branches: [main]
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   format-and-validate:
@@ -18,67 +18,36 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # needed for git history
+          fetch-depth: 0
 
-      # 2. Cache npm modules to speed up Prettier installs
-      - name: Cache npm
-        uses: actions/cache@v3
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-prettier
-          restore-keys: |
-            ${{ runner.os }}-prettier
+      # 2. Install Prettier (pinned to major version 3 for deterministic behaviour)
+      - name: Install Prettier
+        run: npm install --global prettier@3
 
-      # 3. Add missing sections to all Markdown files
-      - name: Ensure required sections
+      # 3. Add missing required sections to all Markdown files (excluding .github/)
+      - name: Ensure required sections in all Markdown files
         run: |
-          find . -name "*.md" > all_md.txt
-          while IFS= read -r file; do
-            echo "Processing '$file'..."
-            tmpfile=$(mktemp)
-            added=false
-            grep -q "^## Summary" "$file" || { echo -e "## Summary\n\n" >> "$tmpfile"; added=true; }
-            grep -q "^## What I Learned" "$file" || { echo -e "## What I Learned\n\n" >> "$tmpfile"; added=true; }
-            grep -q "^## Commands" "$file" || { echo -e "## Commands\n\n" >> "$tmpfile"; added=true; }
-            # Append existing content
-            cat "$file" >> "$tmpfile"
-            if [ "$added" = true ]; then
-              mv "$tmpfile" "$file"
-              echo "Added missing sections to '$file'"
-            else
-              rm "$tmpfile"
-            fi
-          done < all_md.txt
+          find . -name "*.md" -not -path "./.github/*" -print0 \
+            | xargs -0r bash scripts/enforce-doc-format.sh
 
-      # 4. Run Prettier on all Markdown files
-      - name: Prettier Action
-        uses: creyD/prettier_action@v4.6
-        with:
-          prettier_options: --write '**/*.md'
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
-      # 5. Configure git user for commit
-      - name: Configure git user
+      # 4. Run Prettier on all Markdown files (excluding .github/)
+      - name: Run Prettier on all Markdown files
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          find . -name "*.md" -not -path "./.github/*" -print0 \
+            | xargs -0r prettier --write
 
-      # 6. Commit formatting changes
-      - name: Commit formatting changes
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "Auto-format and add missing sections to Markdown docs"
-          branch: auto-format
-          file_pattern: **/*.md
-
-      # 7. Create or update pull request
+      # 5. Create or update a pull request with any formatting changes
       - name: Create or update pull request
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "Auto-format and add missing sections to Markdown docs"
+          commit-message: "docs: auto-format and add missing required sections"
           branch: auto-format
           base: main
-          title: "Docs: Auto-format and add missing sections"
+          title: "Docs: Auto-format and add missing required sections"
           body: |
-            This pull request adds missing required sections to Markdown documents and applies Prettier formatting automatically.
+            This PR was created automatically to:
+            - Add missing required sections (`## Summary`, `## What I Learned`, `## Commands`) to Markdown documents
+            - Apply Prettier formatting to all Markdown files
+
+            Triggered by a push to `main`.

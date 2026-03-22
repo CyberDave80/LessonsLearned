@@ -1,3 +1,5 @@
+## Summary
+
 # Summary: Authentication & API Gateway
 
 ## What I Learned
