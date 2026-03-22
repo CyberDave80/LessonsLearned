@@ -36,26 +36,24 @@ jobs:
           files=$(cat all_md.txt | tr '\n' ' ')
           echo "files=$files" >> $GITHUB_OUTPUT
 
-      # 4. Ensure required sections
       - name: Ensure required sections
         run: |
-          for file in ${{ steps.all-md.outputs.files }}; do
-            echo "Processing $file..."
+          while IFS= read -r file; do
+            echo "Processing '$file'..."
             tmpfile=$(mktemp)
             added=false
-            # Only add sections if missing
             grep -q "^## Summary" "$file" || { echo -e "## Summary\n\n" >> "$tmpfile"; added=true; }
             grep -q "^## What I Learned" "$file" || { echo -e "## What I Learned\n\n" >> "$tmpfile"; added=true; }
             grep -q "^## Commands" "$file" || { echo -e "## Commands\n\n" >> "$tmpfile"; added=true; }
-            # Keep existing content
+            # Append existing content
             cat "$file" >> "$tmpfile"
             if [ "$added" = true ]; then
               mv "$tmpfile" "$file"
-              echo "Added missing sections to $file"
+              echo "Added missing sections to '$file'"
             else
               rm "$tmpfile"
             fi
-          done
+          done < all_md.txt
 
       # 5. Prettify all Markdown files
       - name: Prettier Action
