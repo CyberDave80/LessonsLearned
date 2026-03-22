@@ -15,29 +15,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout the repo (full history for git operations)
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 2. Install Prettier (pinned to major version 3 for deterministic behaviour)
       - name: Install Prettier
         run: npm install --global prettier@3
 
-      # 3. Add missing required sections to all Markdown files (excluding .github/)
       - name: Ensure required sections in all Markdown files
         run: |
           find . -name "*.md" -not -path "./.github/*" -print0 \
             | xargs -0r bash scripts/enforce-doc-format.sh
 
-      # 4. Run Prettier on all Markdown files (excluding .github/)
       - name: Run Prettier on all Markdown files
         run: |
           find . -name "*.md" -not -path "./.github/*" -print0 \
             | xargs -0r prettier --write
 
-      # 5. Create or update a pull request with any formatting changes
       - name: Create or update pull request
         if: github.event_name != 'pull_request'
         uses: peter-evans/create-pull-request@v6
