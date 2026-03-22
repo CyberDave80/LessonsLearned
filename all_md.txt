@@ -1,5 +1,0 @@
-./Kubernetes/Kubernetes-in-Docker.md
-./Kubernetes/KNative/Troubleshooting : Deployment.md
-./Kubernetes/K3s_and_Rancher.md
-./README.md
-./Docker/Docker Swarm Practice.md
