@@ -1,0 +1,41 @@
+name: Docs Style Enforcement
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  format-and-validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout the repo
+      - uses: actions/checkout@v4
+
+      # 2. Run Prettier to auto-format Markdown
+      - name: Prettier Action
+        uses: creyD/prettier_action@v4.6
+        with:
+          prettier_options: --write "**/*.md"
+          only_changed: true
+
+      # 3. Commit formatting changes (if any)
+      - name: Auto-commit Prettier fixes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Auto-format Markdown docs"
+          only_changed: true
+
+      # 4. Enforce required sections from your ruleset
+      - name: Enforce Document Template
+        run: |
+          for file in $(find . -name "*.md"); do
+            echo "Checking $file"
+            grep -q "## Summary" "$file" || (echo "$file missing ## Summary" && exit 1)
+            grep -q "## What I Learned" "$file" || (echo "$file missing ## What I Learned" && exit 1)
+            grep -q "## Commands" "$file" || (echo "$file missing ## Commands" && exit 1)
+          done
