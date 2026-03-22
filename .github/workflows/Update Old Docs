@@ -1,0 +1,70 @@
+name: Docs Auto-Format & Template Enforcement
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  format-and-validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Cache node modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-prettier-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-prettier-
+
+      # 1. Grab ALL Markdown files
+      - name: Find all Markdown files
+        id: all-md
+        run: |
+          files=$(find . -name "*.md")
+          echo "files=$files" >> $GITHUB_OUTPUT
+
+      # 2. Ensure required sections exist
+      - name: Ensure required sections
+        run: |
+          for file in ${{ steps.all-md.outputs.files }}; do
+            echo "Processing $file..."
+            tmpfile=$(mktemp)
+            added=false
+            grep -q "^## Summary" "$file" || { echo -e "## Summary\n\n" >> "$tmpfile"; added=true; }
+            grep -q "^## What I Learned" "$file" || { echo -e "## What I Learned\n\n" >> "$tmpfile"; added=true; }
+            grep -q "^## Commands" "$file" || { echo -e "## Commands\n\n" >> "$tmpfile"; added=true; }
+            cat "$file" >> "$tmpfile"
+            if [ "$added" = true ]; then
+              mv "$tmpfile" "$file"
+              echo "Added missing sections to $file"
+            else
+              rm "$tmpfile"
+            fi
+          done
+
+      # 3. Prettify all Markdown files
+      - name: Prettier Action
+        uses: creyD/prettier_action@v4.6
+        with:
+          prettier_options: --write ${{ steps.all-md.outputs.files }}
+          clean_node_folder: false
+          no_commit: true
+
+      # 4. Commit any changes
+      - name: Commit Auto-Formatted Markdown
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Auto-format and enforce Markdown template"
+          file_pattern: ${{ steps.all-md.outputs.files }}
