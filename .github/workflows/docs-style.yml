@@ -20,7 +20,7 @@ jobs:
       - name: Prettier Action
         uses: creyD/prettier_action@v4.6
         with:
-          prettier_options: --write "**/*.md"
+          prettier_options: --write **/*.md
           only_changed: true
 
       # 3. Commit formatting changes (if any)
