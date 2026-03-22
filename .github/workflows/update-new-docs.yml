@@ -16,13 +16,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout the repo (full history not required for incremental)
+      # 1. Checkout the repo
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 2. Cache npm modules for Prettier
+      # 2. Cache npm modules
       - name: Cache npm
         uses: actions/cache@v3
         with:
@@ -31,19 +31,20 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-prettier
 
-      # 3. Find changed/new Markdown files
+      # 3. Get changed Markdown files safely
       - name: Get changed Markdown files
         id: changed_files
         run: |
           git fetch origin main --depth=1
-          git diff --name-only origin/main...HEAD -- '*.md' > changed_md.txt
-          cat changed_md.txt
-          echo "::set-output name=changed_files::$(cat changed_md.txt)"
+          # Null-separated to handle spaces/colons
+          git diff --name-only -z origin/main...HEAD -- '*.md' > changed_md.txt
+          cat changed_md.txt | tr '\0' '\n'
+          echo "::set-output name=changed_files::$(cat changed_md.txt | tr '\0' '\n')"
 
       # 4. Add missing required sections safely
       - name: Add missing sections
         run: |
-          echo "${{ steps.changed_files.outputs.changed_files }}" | while IFS= read -r file; do
+          while IFS= read -r -d '' file; do
             [ -z "$file" ] && continue
             if [ ! -f "$file" ]; then
               echo "Skipping missing file '$file'"
@@ -62,12 +63,12 @@ jobs:
             else
               rm "$tmpfile"
             fi
-          done
+          done < changed_md.txt
 
-      # 5. Prettify changed files
+      # 5. Prettify changed files safely
       - name: Prettify changed files
         run: |
-          echo "${{ steps.changed_files.outputs.changed_files }}" | while IFS= read -r file; do
+          while IFS= read -r -d '' file; do
             [ -z "$file" ] && continue
             if [ ! -f "$file" ]; then
               echo "Skipping missing file '$file'"
@@ -75,7 +76,7 @@ jobs:
             fi
             echo "Prettifying '$file'"
             npx prettier --write "$file"
-          done
+          done < changed_md.txt
 
       # 6. Commit changes if any
       - name: Commit changes
