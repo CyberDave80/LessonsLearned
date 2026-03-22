@@ -2,11 +2,9 @@
 
 ## What I Learned
 
-## Commands
-
-# Docker-in-Docker Swarm Lab
-
 This guide shows how to create a 3-node Docker Swarm cluster inside Docker containers on macOS or Linux for learning purposes, allowing you to practice Swarm commands without multiple VMs.
+
+## Commands
 
 ## 1. Create a Custom Network
 
