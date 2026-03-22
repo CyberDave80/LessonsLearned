@@ -1,3 +1,9 @@
+## Summary
+
+## What I Learned
+
+## Commands
+
 # Local Kubernetes Cluster with KIND (Kubernetes-in-Docker)
 
 ## Overview
@@ -18,21 +24,21 @@ Docker runs containers that isolate applications.
 
 Laptop  
 └ Docker Engine  
-  └ Containers  
+  └ Containers
 
 Normally, containers run applications like nginx, redis, or postgres.
 
 **Layer 3 — KIND Nodes**  
-KIND creates **Docker containers configured as Kubernetes nodes**. Each container runs Kubernetes components (kubelet, kube-proxy, container runtime), has its own network identity, and behaves like a real node in a cluster.  
+KIND creates **Docker containers configured as Kubernetes nodes**. Each container runs Kubernetes components (kubelet, kube-proxy, container runtime), has its own network identity, and behaves like a real node in a cluster.
 
 Example nodes created by KIND:  
 desktop-control-plane  
 desktop-worker  
-desktop-worker2  
+desktop-worker2
 
 Laptop  
 └ Docker  
-  └ KIND Node Containers  
+  └ KIND Node Containers
 
 > Note: These containers are **purpose-built for Kubernetes**. They are not general-purpose servers and do not run a Docker daemon by default.
 
@@ -40,12 +46,12 @@ Laptop
 Inside each node container, Kubernetes components run.
 
 Control plane node: API server, scheduler, controller manager  
-Worker nodes: kubelet, container runtime (containerd), networking  
+Worker nodes: kubelet, container runtime (containerd), networking
 
 Laptop  
 └ Docker  
   └ KIND Nodes  
-    └ Kubernetes Cluster  
+    └ Kubernetes Cluster
 
 **Layer 5 — Pods**  
 Kubernetes schedules **pods** onto nodes. Pods contain containers running your applications.
@@ -55,7 +61,7 @@ Laptop
   └ KIND Nodes  
     └ Kubernetes  
       └ Pods  
-        └ Containers  
+        └ Containers
 
 ## Why This Is Useful
 
@@ -66,15 +72,15 @@ Normally Kubernetes requires multiple servers, networking configuration, contain
 Install the following tools:
 
 **Docker** — Verify installation with:  
-docker version  
+docker version
 
 **kubectl** — Verify installation with:  
-kubectl version --client  
+kubectl version --client
 
 **KIND** — Install via Homebrew (Mac):  
 brew install kind  
 Verify installation with:  
-kind version  
+kind version
 
 ## Creating a Multi-Node Cluster
 
@@ -88,3 +94,4 @@ nodes:
   - role: control-plane
   - role: worker
   - role: worker
+```
