@@ -1,12 +1,10 @@
 ## Summary
+**Description:** Steps to fix Knative services resolving to internal IPs instead of publicly accessible URLs.  
 
-## What I Learned
+## What I Learned  
+- Troubleshooting Knative when services resolve to internal cluster DNS instead of a public URL
 
-## Commands
-
-# Troubleshooting Knative when services resolve to internal cluster DNS instead of a public URL
-
-**Description:** Steps to fix Knative services resolving to internal IPs instead of publicly accessible URLs.
+## Commands  
 
 1. **Check Knative service status**  
    `kubectl get ksvc -n default <your-service-name>`
