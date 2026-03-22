@@ -4,6 +4,7 @@ on:
   workflow_dispatch: # Run manually
   push:
     branches: [main]
+  pull_request:
 
 permissions:
   contents: write
@@ -50,4 +51,4 @@ jobs:
             - Add missing required sections (`## Summary`, `## What I Learned`, `## Commands`) to Markdown documents
             - Apply Prettier formatting to all Markdown files
 
-            Triggered by a push to `main`.
+            Triggered by a push to `main` or a pull request.
