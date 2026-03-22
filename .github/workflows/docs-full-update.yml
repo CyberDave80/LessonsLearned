@@ -39,6 +39,7 @@ jobs:
 
       # 5. Create or update a pull request with any formatting changes
       - name: Create or update pull request
+        if: github.event_name != 'pull_request'
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
